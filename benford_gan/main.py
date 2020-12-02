@@ -1,6 +1,6 @@
 from math import log
 from scipy.fftpack import dct
-from math import ceil
+# from scipy import misc
 from PIL import Image
 import numpy as np
 
@@ -9,20 +9,13 @@ SAMPLEIMG = "C:\\Users\\sghavam\\Pictures\\jamill-del-rosario-HrOwk2kX9g0-unspla
 
 
 class ImageBlockIterator:
-    """
-    A class to facilitate iterating over an image in blocks of 8x8.
-    """
     def __init__(self, img):
+        # Downsample
+
         self.img = img
 
     def __iter__(self):
-        hblocks = ceil(self.img.shape[0] / 8)
-        wblocks = (self.img.shape[1] / 8)
-
-        for i in range(hblocks):
-            for j in range(wblocks):
-                pass
-            pass
+        pass
 
 
 def load_image(filename, to_grayscale = False):
@@ -52,10 +45,3 @@ def first_digit(ck, b):
     return fd
 
 
-def main():
-    img = load_image(SAMPLEIMG)
-    print(img)
-
-
-if __name__ == '__main__':
-    main()
