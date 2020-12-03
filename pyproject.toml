@@ -12,7 +12,6 @@ scipy = "^1.5.4"
 pillow = "^8.0.1"
 jax = "^0.2.6"
 requests = "^2.25.0"
-jaxlib = "^0.1.57"
 
 [tool.poetry.dev-dependencies]
 

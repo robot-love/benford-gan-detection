@@ -1,10 +1,17 @@
 from math import log
 from scipy.fftpack import dct
-from math import ceil
+from math import ceil, floor
 from PIL import Image
-import jax.numpy as jnp
+import numpy as np
 import requests
 from io import BytesIO
+
+
+ZIGZAG_IND_8X8 = [
+    0,1,8,16,9,2,3,10,17,24,32,25,18,11,4,5,12,19,26,33,40,48,41,34,27,20,13,6,7,14,21,28,35,42,49,56,57,50,43,
+    36,29,22,15,23,30,37,44,51,58,59,60,53,46,39,47,54,61,62,55,63
+]
+
 
 
 def load_sample_img():
@@ -14,32 +21,30 @@ def load_sample_img():
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
     img.load()
-    data = jnp.asarray(img, dtype="int32")
+    data = np.asarray(img, dtype = "int32")
     return data[:, :, 0]
 
 
 class ImageBlockIterator:
-    def __init__(self, img: jnp.ndarray):
-        w, h = img.shape
-
-        self.wblocks = ceil(w/8)
-        self.hblocks = ceil(h/8)
-
-        # self.blocks = jnp.zeros((8, 8, wblocks * hblocks))
-
+    def __init__(self, img: np.ndarray, block_size = 8):
+        self.block_size = block_size
+        self.wblocks = ceil(img.shape[0] / self.block_size)
+        self.hblocks = ceil(img.shape[1] / self.block_size)
         self.img = img
 
     def __iter__(self):
-
         self.i = 0
         self.j = 0
-
         return self
 
-        # return jnp.hstack(a[i:1 + n + i - width:stepsize] for i in range(0, width))
-
     def __next__(self):
+        """
+        The real reason for this class.
 
+        Returns
+        -------
+
+        """
         i = self.i + 1
 
         if i > self.wblocks and self.j >= self.hblocks:
@@ -53,15 +58,17 @@ class ImageBlockIterator:
         else:
             j = self.j
 
-        islice = slice(i*8,(i+1)*8,1)
-        jslice = slice(j*8,(i+1)*8,1)
+        islice = slice(i * self.block_size, (i + 1) * self.block_size, 1)
+        jslice = slice(j * self.block_size, (j + 1) * self.block_size, 1)
 
-        block = self.img[islice,jslice]
-        
+        block = self.img[islice, jslice]
+
+        if len(block) == 0:
+            raise StopIteration
+
         self.i = i
         self.j = j
-        print(i)
-        print(j)
+
         return block
 
 
@@ -69,9 +76,9 @@ def load_image(filename, to_grayscale = False):
     img = Image.open(filename)
     if to_grayscale:
         img = img.convert('LA')
-    img.thumbnail((256,256))
+    img.thumbnail((256, 256))
     img.load()
-    data = jnp.asarray(img, dtype = "int32")
+    data = np.asarray(img, dtype = "int32")
     return data[:, :, 0]
 
 
@@ -92,13 +99,42 @@ def first_digit(ck, b):
     return fd
 
 
+def get_image_fds(img, freqs, *args, **kwargs):
+
+    assert all(isinstance(x, int) for x in freqs)
+    assert max(freqs) < 65
+    assert min(freqs) > -1
+
+    img = ImageBlockIterator(img)
+
+    inds = [ZIGZAG_IND_8X8[i] for i in freqs]
+
+    fds = []
+
+    for i,block in enumerate(img):
+        tform = dct(block).ravel()
+        fds.append([tform[j] for j in inds])
+
+    return fds
+
+
 def main():
     img = load_sample_img()
 
     sample = ImageBlockIterator(img)
 
-    for block in sample:
-        print(dct(block))
+    #
+    args = {
+        'freqs': [0, 1, 2, 3, 5, 10],
+        'bases': [10, 20, 40],
+        'steps': []
+    }
+
+    fds = get_image_fds(img, **args)
+
+    for block_digits in fds:
+        for freq in block_digits:
+
 
 
 if __name__ == '__main__':
