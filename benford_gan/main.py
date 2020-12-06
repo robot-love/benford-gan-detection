@@ -1,19 +1,18 @@
-import numpy as np
+"""
 
+"""
+
+from helper import *
+from core import *
+from config import *
 
 def main():
     img = load_sample_img()
 
-    sample = ImageBlockIterator(img)
-
-    #
-    args = {
-        'freqs': frequencies,
-        'bases': bases,
-        'steps': steps
-    }
 
     fds = get_image_fds(img, **args)
+    
+
     first_digit_vec = np.vectorize(first_digit)
     fds_vec = fds.reshape((91 * len(frequencies), 1))
     A = first_digit_vec(fds_vec, b)

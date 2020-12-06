@@ -3,7 +3,7 @@ import numpy as np
 from math import floor, log
 from scipy.fftpack import dct
 
-from benford_gan.config import ZIGZAG_IND_8X8
+from config import ZIGZAG_IND_8X8
 
 
 class ImageBlockIterator:
@@ -40,21 +40,22 @@ class ImageBlockIterator:
         """
         i = self.i + 1
 
-        if i > self.wblocks:
+
+        if i == self.wblocks:
             i = 0
             j = self.j + 1
         else:
             j = self.j
 
+        if self.j == self.hblocks - 1:
+            self.i = 0
+            self.j = 0
+            raise StopIteration
+
         islice = slice(i * self.block_size, (i + 1) * self.block_size, 1)
         jslice = slice(j * self.block_size, (j + 1) * self.block_size, 1)
 
         block = self.img[islice, jslice]
-
-        if len(block) == 0 or i > self.wblocks and self.j >= self.hblocks:
-            self.i = 0
-            self.j = 0
-            raise StopIteration
 
         self.i = i
         self.j = j
@@ -83,18 +84,28 @@ def first_digit(ck, b):
     return fd
 
 
-def get_image_fds(img, freqs, qtables):
+def get_image_dct_coefs(img, freqs, qtables):
     """
-    Generate a NxMxK
+    Generate a 3D matrix of first digits of quantized DCT coefficients.
 
     Parameters
     ----------
-    img
-    freqs
-    qtables
+    img: np.ndarray
+        NxMx3 RGB color image to be analyzed for natural-ness.
+    freqs: iterable
+        Nx1 DCT frequency indices to include in the feature vector
+    qtables: np.ndarray
+        8x8 JPEG quantization table
 
     Returns
     -------
+    np.ndarray
+        LxMxN 3D array of first digits. 
+        
+        Axes: 
+        - i: image block
+        - j: frequency
+        - k: quantization tables
 
     """
     assert all(isinstance(x, int) for x in freqs)
@@ -105,44 +116,75 @@ def get_image_fds(img, freqs, qtables):
 
     inds = [ZIGZAG_IND_8X8[i] for i in freqs]
 
-    fds = np.zeros((len(freqs), len(img), len(qtables)))
+    dct_coeffs = np.zeros((len(img), len(freqs), len(qtables)))
 
     for i, qtable in enumerate(qtables):
         table = qtable.ravel()
         for j, block in enumerate(img):
             # transform image block to freq. domain before applying quantization table coefficient
-            tform = dct(block).ravel()
-            fds[:, j, i] = np.asarray([round(tform[k]/table[k]) for k in inds])
+            # Luminance only! -> [:,:,0]
+            tform = dct(block[:,:,0]).ravel()
 
-    return np.asarray(fds)
+            dct_coeffs[j, :, i] = np.asarray([round(tform[k]/table[k]) for k in inds])
+
+    return dct_coeffs
 
 
-def get_dct_fd_pmf(fds: 'numpy array', base) -> List[np.ndarray]:
+def dct_coeff_to_first_digit(dct_coeffs, base):
+    """Get first digits from DCT coefficients
+
+    Args:
+        dct_coeffs ([type]): [description]
+        base ([type]): [description]
+    """
+    fds = np.zeros_like(dct_coeffs)
+
+    for i in range(dct_coeffs.shape[1]):
+        for j in range(dct_coeffs.shape[2]):
+            fds[:,i,j] = first_digit(dct_coeffs[:,i,j], base)
+
+    return fds
+
+
+def get_dct_fd_pmf(fds: np.ndarray, base: int) -> np.ndarray:
     """
 
     Parameters
     ----------
-    fds
+    fds: np.ndarray
+        3D array of first digits.
+        Axes:
+        - 0: Image blocks
+        - 1: DCT frequencies
+        - 2: Quantization tables
+    base: int
+        Base of first digits
 
     Returns
     -------
+    np.ndarray
+        Probability mass function of all digits in range [0, base-1] for all frequencies and Q tables.
 
     """
-    # vectorize first digits
-    fds_vec = fds.reshape((fds.shape[0] * len(freqs), 1))
+    shape = (base - 1,  fds.shape[1], fds.shape[2]) 
 
-    A = first_digit(fds_vec, base)
-    # A = A.reshape((fds.shape[0], len(freqs)))
+    pmf = np.zeros(shape)
 
-    hists = [np.histogram(A[:, j], [i for i in range(b)][1:]) for j in range(len(frequencies))]
-    hists = [[h[0] / len(fds), h[1]] for h in hists]
+    for i in range(shape[1]):
+        for j in range(shape[2]):
+            pmf[:,i,j] = np.histogram(fds[:,i,j], [i for i in range(base)])[0] / fds.shape[0]
+
+    return pmf
+    
+
+@np.vectorize
+def general_benford_pmf(digit, beta, gamma, delta, base):
+    """ General, parameterized form of benfords law. """
+    p = beta * log(1 + 1/(gamma + digit**delta), base=base)
+    return p
 
 
-def general_benford_pmf(base):
-    pass
-
-
-def fit_pmf_to_benford(p: 'numpy array') -> 'numpy array':
+def fit_pmf_to_benford(p: np.ndarray) -> np.ndarray:
     pass
 
 
@@ -164,7 +206,7 @@ def div_jensen_shannon(p, p_hat):
     pass
 
 
-def div_kullback_leibler(p, p_hat):
+def div_kullback_leibler(p: np.ndarray, p_hat:np.ndarray):
     """
     Kullback-Leibler divergence of 2 prob. mass functions.
 
