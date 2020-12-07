@@ -3,6 +3,8 @@ import numpy as np
 from math import floor, log
 from scipy.fftpack import dct
 
+from scipy.optimize import least_squares
+
 from config import ZIGZAG_IND_8X8
 
 
