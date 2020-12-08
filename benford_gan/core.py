@@ -182,8 +182,20 @@ def get_dct_fd_pmf(fds: np.ndarray, base: int) -> np.ndarray:
 @np.vectorize
 def general_benford_pmf(digit, beta, gamma, delta, base):
     """ General, parameterized form of benfords law. """
-    p = beta * log(1 + 1/(gamma + digit**delta), base=base)
+    try:
+        p = beta * log(1 + 1/(gamma + digit**delta), base)
+    except ValueError:
+        print(f"{beta} - {gamma} - {delta}")
+        p = 0
     return p
+
+
+def mmse_benford_cost(x, pmf, base, ds, *args, **kwargs) -> float:
+    """ Benford pmf fit cost function """
+    # ds = [i+1 for i in range(base-1)]
+    pfit = general_benford_pmf(ds, x[0], x[1], x[2], base)
+    cost = np.linalg.norm((pfit - pmf)**2)
+    return cost
 
 
 def fit_pmf_to_benford(p: np.ndarray) -> np.ndarray:
