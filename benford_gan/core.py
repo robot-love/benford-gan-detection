@@ -256,7 +256,7 @@ def div_renyi(p, p_hat, alpha = 0.1):
     return dr
 
 
-def generate_benford_feature(pfit):
+def generate_benford_feature(pmf):
     """
     Generate the Benford feature of an image pmf
 
@@ -268,7 +268,40 @@ def generate_benford_feature(pfit):
     -------
 
     """
-    phi = None
+
+    shape = (3, pmf.shape[1], pmf.shape[2])
+    phi = np.zeros(shape)
+
+    for k in range(pmf.shape[3]):
+        base = len(pmf[:,0,0,k])
+        for i in range(pmf.shape[1]):
+            for j in range(pmf.shape[2]):
+                p = pmf[:,i,j]
+
+                ds = [i+1 for i in range(9)]
+                x0 = [1,1,1]
+
+                kwargs = {
+                    'pmf': p,
+                    'base': base,
+                    'ds': ds
+                }
+
+                xs = least_squares(fun = mmse_benford_cost, x0 = x0 , kwargs = kwargs)
+
+                beta = xs.x[0]
+                gamma = xs.x[1]
+                delta = xs.x[2]
+
+                pfit = general_benford_pmf(ds, beta, gamma, delta, base)
+
+                phi[:,i,j] = np.array(
+                        [
+                            div_jensen_shannon(pfit, p), 
+                            div_kullback_leibler(pfit, p), 
+                            div_renyi(pfit, p)
+                        ]
+                    )
 
     return phi
 
