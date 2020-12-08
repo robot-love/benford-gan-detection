@@ -198,10 +198,6 @@ def mmse_benford_cost(x, pmf, base, ds, *args, **kwargs) -> float:
     return cost
 
 
-def fit_pmf_to_benford(p: np.ndarray) -> np.ndarray:
-    pass
-
-
 def div_jensen_shannon(p, p_hat):
     """
     Jensen-Shannon divergence measure of 2 probability mass functions. This is a symmetrized version of Kullback-Leibler
@@ -217,7 +213,9 @@ def div_jensen_shannon(p, p_hat):
 
     """
 
-    pass
+    djs = div_kullback_leibler(p_hat, p) + div_kullback_leibler(p, p_hat)
+
+    return djs
 
 
 def div_kullback_leibler(p: np.ndarray, p_hat:np.ndarray):
@@ -243,8 +241,19 @@ def div_kullback_leibler(p: np.ndarray, p_hat:np.ndarray):
     return dkl
 
 
-def div_renyi(p, p_hat):
-    pass
+def S(p, q, a):
+    assert len(p) == len(q)
+    
+    s = 0.0
+    for d in range(len(p)):
+        s += q[d]**a / p[d]**(a-1)
+    
+    return s
+
+
+def div_renyi(p, p_hat, alpha = 0.1):
+    dr = (1/(1/alpha)) * ( log(S(p,p_hat, alpha)) + log(S(p_hat, p, alpha)) )
+    return dr
 
 
 def generate_benford_feature(pfit):
