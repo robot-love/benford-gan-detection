@@ -3,6 +3,7 @@ import numpy as np
 from math import floor, log
 from scipy.fftpack import dct
 from scipy.optimize import least_squares
+from scipy.special import softmax
 
 from config import ZIGZAG_IND_8X8, QTable
 from helper import *
@@ -13,8 +14,7 @@ class BenfordFeature:
     A data struct for benford features used to detect GAN-generated images
     """
 
-    def __init__(self, filename, feature, frequencies, bases, qtables, label):
-        self.filename = filename
+    def __init__(self, feature, frequencies, bases, qtables, label):
         self.feature = feature
         self.frequencies = frequencies
         self.bases = bases
@@ -22,8 +22,7 @@ class BenfordFeature:
         self.label = label
 
     def __repr__(self):
-        rep = f"{'File: ':>20}{self.filename}\n"\
-                f"{'Feature shape: ':>20}{self.feature.shape}\n"\
+        rep = f"{'Feature shape: ':>20}{self.feature.shape}\n"\
                 f"{'Frequencies: ':>20}{', '.join(map(str, self.frequencies))}\n"\
                 f"{'Bases: ':>20}{', '.join(map(str, self.bases))}\n"\
                 f"{'Quantization tables: ':>20}{self.qtables}\n"\
@@ -103,16 +102,37 @@ def first_digit(ck, b):
     -------
 
     """
+
     if ck == 0:
         fd = 0
     else:
-        fd = floor(abs(ck) / (b ** floor((log(abs(ck), b)))))
+        x = round(log(abs(ck), b),2)
+        fd = floor(abs(ck) / ( b ** floor(x) ))
+    return fd
+
+
+@np.vectorize
+def first_digit_alt(num, base):
+    n = '%.2E' % abs(num)
+    fd = int(n[:1])
     return fd
 
 
 # @np.vectorize
-def dct_pmf(fds, base):
-    return np.histogram(fds, [i for i in range(base-1)])[0] / fds.shape[0]
+def dct_pmf(fds, ds):
+    # ds = [i for i in range(base-1)]
+    pmf = np.histogram(fds, ds)[0]
+    num_elements = fds.shape[0]
+
+    # Additive smoothing to prevent zero elements
+    for i in range(len(pmf)):
+        if pmf[i] == 0:
+            pmf[i] += 1
+            num_elements += 1
+
+    pmf = pmf / num_elements
+
+    return pmf
 
 
 def get_image_dct_coefs(img, freqs, qtables, channel = 'lum'):
@@ -200,14 +220,14 @@ def get_dct_fd_pmf(fds: np.ndarray, base: int) -> np.ndarray:
         Probability mass function of all digits in range [0, base-1] for all frequencies and Q tables.
 
     """
-    shape = (base - 1,  fds.shape[1], fds.shape[2]) 
-
+    ds = [i+0.5 for i in range(base)]
+    shape = (base - 1,  fds.shape[1], fds.shape[2])
     pmf = np.zeros(shape)
 
     for i in range(shape[1]):
         for j in range(shape[2]):
-            # pmf[:,i,j] = dct_pmf(fds[:,i,j], base)
-            pmf[:,i,j] = np.histogram(fds[:,i,j], [i for i in range(base)])[0] / fds.shape[0]
+            pmf[:, i, j] = dct_pmf(fds[:, i, j], ds)
+            # pmf[:,i,j] = np.histogram(fds[:,i,j], ds)[0] / fds.shape[0]
 
     return pmf
     
@@ -221,6 +241,10 @@ def general_benford_pmf(digit, beta, gamma, delta, base):
         print(f"{beta} - {gamma} - {delta}")
         p = 0
     return p
+
+
+def benford_pmf(base):
+    return np.asarray([log(1+1/(d+1), base) for d in range(base-1)])
 
 
 def mmse_benford_cost(x, pmf, base, ds, *args, **kwargs) -> float:
@@ -302,7 +326,6 @@ def get_phi(pmf):
     for i in range(pmf.shape[1]):
         for j in range(pmf.shape[2]):
             p = pmf[:,i,j]
-
             ds = [i+1 for i in range(len(p))]
             x0 = [1,1,1]
 
@@ -329,16 +352,13 @@ def get_phi(pmf):
                     ]
                 )
             except ValueError:
-                print(p)
-                print(pfit)
-                exit()
+                raise
 
     return phi
 
 
-def generate_benford_feature(filepath: str, frequencies: List[int], bases: List[int], qtables: QTable, label):
+def generate_benford_feature(img: np.ndarray, frequencies: List[int], bases: List[int], qtables: List[QTable], label):
     """ Generate a Benford feature for an image based on config """
-    img = load_image_from_file(filepath)
 
     # Get DCT Coefficients
     dct_coeffs = get_image_dct_coefs(img, frequencies, [q.matrix for q in qtables])
@@ -354,8 +374,8 @@ def generate_benford_feature(filepath: str, frequencies: List[int], bases: List[
 
         # Generate benford feature
         phi = get_phi(pmf)
-        features[:,:,i,:] = phi
+        features[:, :, i, :] = phi
 
-    b = BenfordFeature(filepath, features, frequencies, bases, [q.name for q in qtables], label)
+    b = BenfordFeature(features, frequencies, bases, [q.name for q in qtables], label)
 
     return b
