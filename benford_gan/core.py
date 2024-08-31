@@ -1,12 +1,13 @@
 from typing import List
+from enum import Enum
 import numpy as np
 from math import floor, log
 from scipy.fftpack import dct
 from scipy.optimize import least_squares
 from scipy.special import softmax
 
-from config import ZIGZAG_IND_8X8, QTable
-from helper import *
+from benford_gan.config import ZIGZAG_IND_8X8, QTable
+from benford_gan.helper import *
 
 
 class BenfordFeature:
@@ -22,13 +23,19 @@ class BenfordFeature:
         self.label = label
 
     def __repr__(self):
-        rep = f"{'Feature shape: ':>20}{self.feature.shape}\n"\
+        rep = f"Benford Feature\n"\
+                f"{'Feature shape: ':>20}{self.feature.shape}\n"\
                 f"{'Frequencies: ':>20}{', '.join(map(str, self.frequencies))}\n"\
                 f"{'Bases: ':>20}{', '.join(map(str, self.bases))}\n"\
                 f"{'Quantization tables: ':>20}{self.qtables}\n"\
                 f"{'Label: ':>20}{self.label}"
         
         return rep
+
+
+class Label(Enum):
+    NATURAL = True
+    GAN_GENERATED = False
 
 
 class ImageBlockIterator:
@@ -56,15 +63,7 @@ class ImageBlockIterator:
         return self
 
     def __next__(self):
-        """
-        The real reason for this class.
-
-        Returns
-        -------
-
-        """
         i = self.i + 1
-
 
         if i == self.wblocks:
             i = 0
@@ -167,7 +166,6 @@ def get_image_dct_coefs(img, freqs, qtables, channel = 'lum'):
     assert channel in ['lum','chr']
 
     img = ImageBlockIterator(img)
-
     inds = [ZIGZAG_IND_8X8[i] for i in freqs]
 
     dct_coeffs = np.zeros((len(img), len(freqs), len(qtables)))
@@ -238,7 +236,7 @@ def general_benford_pmf(digit, beta, gamma, delta, base):
     try:
         p = beta * log(1 + 1/(gamma + digit**delta), base)
     except ValueError:
-        print(f"{beta} - {gamma} - {delta}")
+        # print(f"{beta} - {gamma} - {delta}")
         p = 0
     return p
 
@@ -305,13 +303,13 @@ def div_renyi(p, p_hat, alpha = 0.1):
     return dr
 
 
-def get_phi(pmf):
+def get_phi(pmf) -> np.ndarray:
     """
     Generate the Benford feature of an image pmf
 
     Parameters
     ----------
-    pfit
+    pmf: probability mass function of first digits of image block 
 
     Returns
     -------
@@ -361,8 +359,8 @@ def generate_benford_feature(img: np.ndarray, frequencies: List[int], bases: Lis
     """ Generate a Benford feature for an image based on config """
 
     # Get DCT Coefficients
-    dct_coeffs = get_image_dct_coefs(img, frequencies, [q.matrix for q in qtables])
-
+    dct_coeffs = get_image_dct_coefs(img, frequencies, [np.asarray(q.value) for q in qtables])
+    
     features = np.zeros((3, len(frequencies), len(bases), len(qtables)))
 
     for i,base in enumerate(bases):
@@ -375,7 +373,9 @@ def generate_benford_feature(img: np.ndarray, frequencies: List[int], bases: Lis
         # Generate benford feature
         phi = get_phi(pmf)
         features[:, :, i, :] = phi
+    
+    feature = features.flatten()
 
-    b = BenfordFeature(features, frequencies, bases, [q.name for q in qtables], label)
+    b = BenfordFeature(feature, frequencies, bases, [q.name for q in qtables], label)
 
     return b
