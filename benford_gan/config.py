@@ -1,14 +1,4 @@
 from enum import Enum
-from numpy import asarray
-
-class QTable:
-    def __init__(self, matrix, name):
-        self.matrix = matrix
-        self.name = name
-
-SAMPLE_IMG_PATHS = [
-    "data/1012343_edited-1.jpg"
-]
 
 SAMPLE_IMG_URLS = [
     "https://images.unsplash.com/photo-1483736762161-1d107f3c78e1?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1934&q=80",
@@ -16,28 +6,20 @@ SAMPLE_IMG_URLS = [
     "https://images.unsplash.com/photo-1494783367193-149034c05e8f?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80"
 ]
 
+ZIGZAG_IND_8X8 = [0,1,8,16,9,2,3,10,17,24,32,25,18,11,4,5,12,19,26,33,40,48,41,34,27,20,13,6,7,14,21,28,35,42,49,56,57,50,43,36,29,22,15,23,30,37,44,51,58,59,60,53,46,39,47,54,61,62,55,63]
 
-ZIGZAG_IND_8X8 = [
-    0,1,8,16,9,2,3,10,17,24,32,25,18,11,4,5,12,19,26,33,40,48,41,34,27,20,13,6,7,14,21,28,35,42,49,56,57,50,43,
-    36,29,22,15,23,30,37,44,51,58,59,60,53,46,39,47,54,61,62,55,63
+jpeg_std_lum = [
+    [16, 11, 10, 16,  24,  40,  51,  61],
+    [12, 12, 14, 19,  26,  58,  60,  55],
+    [14, 13, 16, 24,  40,  57,  69,  56],
+    [14, 17, 22, 29,  51,  87,  80,  62],
+    [18, 22, 37, 56,  68, 109, 103,  77],
+    [24, 36, 55, 64,  81, 104, 113,  92],
+    [49, 64, 78, 87, 103, 121, 120, 101],
+    [72, 92, 95, 98, 112, 100, 103,  99]
 ]
 
-
-JPEG_STD_LUM = QTable(asarray([
-    [16, 11, 10, 16, 24,  40,  51,  61 ],
-    [12, 12, 14, 19, 26,  58,  60,  55 ],
-    [14, 13, 16, 24, 40,  57,  69,  56 ],
-    [14, 17, 22, 29, 51,  87,  80,  62 ],
-    [18, 22, 37, 56, 68,  109, 103, 77 ],
-    [24, 36, 55, 64, 81,  104, 113, 92 ],
-    [49, 64, 78, 87, 103, 121, 120, 101],
-    [72, 92, 95, 98, 112, 100, 103, 99 ]
-    ]),
-    'JPEG_STD_LUM')
-
-
-JPEG_STD_CHR = QTable(
-    asarray([
+jpeg_std_chr = [
     [17, 18, 24, 47, 99, 99, 99, 99],
     [18, 21, 26, 66, 99, 99, 99, 99],
     [24, 26, 56, 99, 99, 99, 99, 99],
@@ -46,12 +28,9 @@ JPEG_STD_CHR = QTable(
     [99, 99, 99, 99, 99, 99, 99, 99],
     [99, 99, 99, 99, 99, 99, 99, 99],
     [99, 99, 99, 99, 99, 99, 99, 99]
-    ]),
-    'JPEG_STD_CHR')
+]
 
-
-PHOTOSHOP_00_LUM = QTable(
-    asarray([
+photoshop_00_lum = [
     [32, 33, 51, 81, 66, 39, 34, 17],
     [33, 36, 48, 47, 28, 23, 12, 12],
     [51, 48, 47, 28, 23, 12, 12, 12],
@@ -60,12 +39,9 @@ PHOTOSHOP_00_LUM = QTable(
     [39, 23, 12, 12, 12, 12, 12, 12],
     [34, 12, 12, 12, 12, 12, 12, 12],
     [17, 12, 12, 12, 12, 12, 12, 12]
-    ]),
-    'PHOTOSHOP_00_LUM')
+]
 
-
-PHOTOSHOP_00_CHR = QTable(
-    asarray([
+photoshop_00_chr = [
     [34, 51, 52, 34, 20, 20, 17, 17],
     [51, 38, 24, 14, 14, 12, 12, 12],
     [52, 24, 14, 14, 12, 12, 12, 12],
@@ -74,12 +50,9 @@ PHOTOSHOP_00_CHR = QTable(
     [20, 12, 12, 12, 12, 12, 12, 12],
     [17, 12, 12, 12, 12, 12, 12, 12],
     [17, 12, 12, 12, 12, 12, 12, 12]
-    ]),
-    'PHOTOSHOP_00_CHR')
+]
 
-
-PHOTOSHOP_01_LUM = QTable(
-    asarray([
+photoshop_01_lum = [
     [27, 26, 41, 65, 66, 39, 34, 17],
     [26, 29, 38, 47, 28, 23, 12, 12],
     [41, 38, 47, 28, 23, 12, 12, 12],
@@ -88,12 +61,9 @@ PHOTOSHOP_01_LUM = QTable(
     [39, 23, 12, 12, 12, 12, 12, 12],
     [34, 12, 12, 12, 12, 12, 12, 12],
     [17, 12, 12, 12, 12, 12, 12, 12]
-    ]),
-    'PHOTOSHOP_01_LUM')
+]
 
-
-PHOTOSHOP_01_CHR = QTable(
-    asarray([
+photoshop_01_chr = [
     [29, 41, 52, 34, 20, 20, 17, 17],
     [41, 38, 24, 14, 14, 12, 12, 12],
     [52, 24, 14, 14, 12, 12, 12, 12],
@@ -102,12 +72,9 @@ PHOTOSHOP_01_CHR = QTable(
     [20, 12, 12, 12, 12, 12, 12, 12],
     [17, 12, 12, 12, 12, 12, 12, 12],
     [17, 12, 12, 12, 12, 12, 12, 12]
-    ]),
-    'PHOTOSHOP_01_CHR')
+]
 
-
-PHOTOSHOP_FOR_WEB_090_LUM = QTable(
-    asarray([
+photoshop_for_web_090_lum = [
     [1, 1, 1, 1, 2, 2, 2, 3],
     [1, 1, 1, 1, 2, 2, 2, 3],
     [1, 1, 1, 1, 2, 3, 4, 5],
@@ -116,12 +83,9 @@ PHOTOSHOP_FOR_WEB_090_LUM = QTable(
     [2, 2, 3, 4, 5, 7, 8, 8],
     [2, 2, 4, 5, 7, 8, 8, 8],
     [3, 3, 5, 7, 8, 8, 8, 8]
-    ]),
-    'PHOTOSHOP_FOR_WEB_090_LUM')
+]
 
-
-PHOTOSHOP_FOR_WEB_090_CHR = QTable(
-    asarray([
+photoshop_for_web_090_chr = [
     [1, 1, 2, 5, 7, 8, 8, 8],
     [1, 2, 3, 5, 8, 8, 8, 8],
     [2, 3, 4, 8, 8, 8, 8, 8],
@@ -130,12 +94,9 @@ PHOTOSHOP_FOR_WEB_090_CHR = QTable(
     [8, 8, 8, 8, 8, 8, 8, 8],
     [8, 8, 8, 8, 8, 8, 8, 8],
     [8, 8, 8, 8, 8, 8, 8, 8]
-    ]),
-    'PHOTOSHOP_FOR_WEB_090_CHR')
+]
 
-
-PHOTOSHOP_FOR_WEB_100_LUM = QTable(
-    asarray([
+photoshop_for_web_100_lum = [
     [1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 1, 2],
@@ -144,12 +105,10 @@ PHOTOSHOP_FOR_WEB_100_LUM = QTable(
     [1, 1, 1, 1, 2, 2, 3, 3],
     [1, 1, 1, 2, 2, 3, 3, 3],
     [1, 1, 2, 2, 3, 3, 3, 3]
-    ]),
-    'PHOTOSHOP_FOR_WEB_100_LUM')
+]
 
 
-PHOTOSHOP_FOR_WEB_100_CHR = QTable(
-    asarray([
+photoshop_for_web_100_chr = [
     [1, 1, 1, 2, 2, 3, 3, 3],
     [1, 1, 1, 2, 3, 3, 3, 3],
     [1, 1, 1, 3, 3, 3, 3, 3],
@@ -158,5 +117,17 @@ PHOTOSHOP_FOR_WEB_100_CHR = QTable(
     [3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3],
     [3, 3, 3, 3, 3, 3, 3, 3]
-    ]),
-    'PHOTOSHOP_FOR_WEB_100_CHR')
+]
+
+
+class QTable(Enum):
+    JPEG_STD_LUM = jpeg_std_lum
+    JPEG_STD_CHR = jpeg_std_chr
+    PHOTOSHOP_00_LUM = photoshop_00_lum
+    PHOTOSHOP_00_CHR = photoshop_00_chr
+    PHOTOSHOP_01_LUM = photoshop_01_lum
+    PHOTOSHOP_01_CHR = photoshop_01_chr
+    PHOTOSHOP_FOR_WEB_090_LUM = photoshop_for_web_090_lum
+    PHOTOSHOP_FOR_WEB_090_CHR = photoshop_for_web_100_chr
+    PHOTOSHOP_FOR_WEB_100_LUM = photoshop_for_web_100_lum
+    PHOTOSHOP_FOR_WEB_100_CHR = photoshop_for_web_100_chr

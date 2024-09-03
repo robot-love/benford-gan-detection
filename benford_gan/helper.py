@@ -4,10 +4,12 @@ from PIL import Image
 from io import BytesIO
 import numpy as np
 import string
+from typing import NamedTuple
+
 digs = string.digits + string.ascii_letters
 
 
-def load_img_from_url(url: str) -> 'numpy array':
+def load_img_from_url(url: str) -> np.ndarray:
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
     img = img.convert('YCbCr')
@@ -16,7 +18,7 @@ def load_img_from_url(url: str) -> 'numpy array':
     return data
 
 
-def load_image_from_file(filename: str) -> 'numpy array':
+def load_image_from_file(filename: str) -> np.ndarray:
     img = Image.open(filename)
     img = img.convert('YCbCr')
     img.load()
@@ -53,3 +55,19 @@ def int2base(x, base):
     digits.reverse()
 
     return ''.join(digits)
+
+
+def enumerated_batch_generator(filepaths, batch_size):
+    """Yields batches of file paths.
+
+    Args:
+        filepaths (list of str): List of file paths.
+        batch_size (int): The size of each batch.
+
+    Yields:
+        list of str: A batch of file paths.
+    """
+    i = 1
+    for idx in range(0, len(filepaths), batch_size):
+        yield i, filepaths[idx:idx + batch_size]
+        i += 1
