@@ -18,8 +18,8 @@ import yaml
 
 @dataclass
 class BenfordClassifierConfig:
-    natural_dir: str
-    deepfake_dir: str
+    natural_dirs: list[str]
+    deepfake_dirs: list[str]
     output_dir: str
     freq: list[int]
     bases: int
@@ -60,11 +60,11 @@ class BenfordClassifier:
             pickle.dump(self, f)
 
     @classmethod
-    def load(cls, file_path: str):
+    def load(cls, file_path: str) -> 'BenfordClassifier':
         with open(file_path, 'rb') as f:
             return pickle.load(f)
 
-    def train(self, imgs: list[TrainingImage], output_dir):
+    def train(self, imgs: list[TrainingImage], output_dir) -> np.ndarray:
         features = process_training_images(
             training_imgs=imgs,
             frequencies=self.frequencies,
@@ -81,6 +81,9 @@ class BenfordClassifier:
             train_labels.append(data.label)
         self.model.fit(train_data, train_labels)
 
+        # save the model
+        self.save(os.path.join(output_dir, "benford_classifier.pkl"))
+
         test_data = []
         test_labels = []
         for data in test:
@@ -88,8 +91,15 @@ class BenfordClassifier:
             test_labels.append(data.label)
         x = self.model.predict(test_data)
 
-    def predict(img: np.ndarray):
-        pass
+    def predict(self, img: np.ndarray) -> bool:
+        bf = core.generate_benford_feature(
+            img, 
+            self.frequencies, 
+            self.bases, 
+            self.quantization_tables, 
+            None
+        )
+        return self.model.predict(bf.feature)
 
 
 def load_config_and_validate(cfg_path: str):
@@ -98,12 +108,14 @@ def load_config_and_validate(cfg_path: str):
     with open(cfg_path) as f:
         cfg_dict = yaml.load(stream=f, Loader=yaml.FullLoader)
 
-    if not os.path.isdir(cfg_dict['natural_dir']):
-        raise NotADirectoryError
-    if not os.path.isdir(cfg_dict['deepfake_dir']):
-        raise NotADirectoryError
+    for folder in cfg_dict['natural_dirs']:
+        if not os.path.isdir(folder):
+            raise NotADirectoryError(f"{folder} is not a valid directory.")
+    for folder in cfg_dict['deepfake_dirs']:
+        if not os.path.isdir(folder):
+            raise NotADirectoryError(f"{folder} is not a valid directory.")
     if not os.path.isdir(cfg_dict['output_dir']):
-        raise NotADirectoryError
+        raise NotADirectoryError(f"{cfg_dict['output_dir']} is not a valid directory")
     if not cfg_dict['freq_count'] > 0 and cfg_dict['freq_count'] < 64:
         raise ValueError("Incorrect DCT frequency values. Ensure that 0 < f < 64 for all entries.")
     if not all(base > 0 for base in cfg_dict['bases']):
@@ -124,21 +136,9 @@ def load_config_and_validate(cfg_path: str):
     return cfg
 
 
-def load_training_images(nat_dir, gan_dir):
-    nat_files = os.listdir(os.path.abspath(nat_dir))
-    gan_files = os.listdir(os.path.abspath(gan_dir))
-
-    training_imgs = [
-        TrainingImage(
-            os.path.join(nat_dir, file), core.Label.NATURAL
-        ) for file in nat_files
-    ]
-    training_imgs.extend([
-        TrainingImage(
-            os.path.join(gan_dir, file), core.Label.GAN_GENERATED
-        ) for file in gan_files
-    ])
-
+def label_training_images(folder: str, label: core.Label) -> list[TrainingImage]:
+    nat_files = os.listdir(os.path.abspath(folder))
+    training_imgs = [TrainingImage(os.path.join(folder, file), label) for file in folder]
     return training_imgs
 
 
@@ -180,20 +180,3 @@ def process_training_images(
         save_batch_features(batch_features, output_dir, i, batch_count)
         features.extend(batch_features)
     return features
-
-
-def collect_training_images(cfg):
-    nat_files = os.listdir(os.path.abspath(cfg.natural_dir))
-    gan_files = os.listdir(os.path.abspath(cfg.deepfake_dir))
-
-    training_imgs = [
-        TrainingImage(
-            os.path.join(cfg.natural_dir, file), core.Label.NATURAL
-        ) for file in nat_files
-    ]
-    training_imgs.extend([
-        TrainingImage(
-            os.path.join(cfg.deepfake_dir, file), core.Label.GAN_GENERATED
-        ) for file in gan_files
-    ])
-    return training_imgs

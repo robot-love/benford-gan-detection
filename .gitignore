@@ -5,3 +5,4 @@
 **/.vscode/
 **/test-data
 **/config.yml
+**/.venv/
