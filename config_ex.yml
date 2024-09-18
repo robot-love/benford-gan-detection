@@ -1,9 +1,13 @@
-# Directory containing natural image set
-natural_dir: ''
-# Directory containing GAN-generated image set
-deepfake_dir: ''
-# number of highest DCT frequencies to include in Benford feature
+# Directories containing natural image set
+natural_dirs: 
+  - ''
+# Directories containing GAN-generated image set
+deepfake_dirs: 
+  - ''
+# number of top DCT frequencies to include in Benford feature
 freq_count: 5
+# Train/Test split
+test_split: 0.2
 # Radix to use for generalized Benford Law pmf
 bases:
   - 10
@@ -14,4 +18,4 @@ qtables:
 # Images to process per batch for training. 
 # Features will be saved in these batch sizes.
 # Used for checkpointing and crash recovery during training.
-batch_size: 2
+batch_size: 32

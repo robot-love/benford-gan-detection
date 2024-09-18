@@ -54,6 +54,7 @@ class BenfordClassifier:
         self.frequencies = cfg.freq
         self.quantization_tables = cfg.qtables
         self.training_batch_size = cfg.batch_size
+        self.test_split = cfg.test_split
 
     def save(self, file_path: str):
         with open(file_path, 'wb') as f:
@@ -73,7 +74,7 @@ class BenfordClassifier:
             batch_size=self.training_batch_size,
             output_dir=output_dir
         )
-        train, test = train_test_split(features, test_size = 0.3, train_size = 0.7)
+        train, test = train_test_split(features, test_size = self.test_split, train_size = 1 - self.test_split)
         train_data = []
         train_labels = []
         for data in train:

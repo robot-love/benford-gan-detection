@@ -41,13 +41,27 @@ In the case of images, Benford's Law can be used to detect GAN-generated images 
 Before running the training or inference scripts, make sure to review and update the `config.yml` file with your desired settings:
 
 ```yaml
-data:
-data_dir: /path/to/dogans/dataset
-train_split: 0.8
-val_split: 0.1
-test_split: 0.1
-model:
-type: benford_classifier
+# Directories containing natural image set
+natural_dirs: 
+  - ''
+# Directories containing GAN-generated image set
+deepfake_dirs: 
+  - ''
+# number of top DCT frequencies to include in Benford feature
+freq_count: 5
+# Train/Test split
+test_split: 0.2
+# Radix to use for generalized Benford Law pmf
+bases:
+  - 10
+  - 20
+# Quantization tables
+qtables: 
+  - 'PHOTOSHOP_FOR_WEB_100_LUM'
+# Images to process per batch for training. 
+# Features will be saved in these batch sizes.
+# Used for checkpointing and crash recovery during training.
+batch_size: 32
 ```
 
 ### Training
