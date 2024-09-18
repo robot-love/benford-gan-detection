@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', '-c', type=str, help="Config.yml filepath for training config")
     parser.add_argument('--image', '-i', type=str, help="Image filepath for classifier inference.")
     parser.add_argument('--model', '-m', type=str, help="Trained Benford classifier model filepath.")
+    parser.add_argument('--output', '-o', type=str, help="Output directory, will be created if it does not exist.")
     
     args = parser.parse_args()
 
@@ -26,6 +27,9 @@ if __name__ == '__main__':
     if args.cmd.lower() == 'train':
         cfg = load_config_and_validate(args.cfg)
         classifier = BenfordClassifier(cfg)
+        
+        if not os.path.isdir(args.output):
+            os.makedirs(args.output)
 
         training_imgs = []
         for folder in cfg.natural_dirs:

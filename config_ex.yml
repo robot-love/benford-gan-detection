@@ -2,8 +2,6 @@
 natural_dir: ''
 # Directory containing GAN-generated image set
 deepfake_dir: ''
-# Output directory for model parameters and feature batches
-output_dir: ''
 # number of highest DCT frequencies to include in Benford feature
 freq_count: 5
 # Radix to use for generalized Benford Law pmf
